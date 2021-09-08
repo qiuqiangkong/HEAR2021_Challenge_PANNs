@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from torchaudio.transforms import Resample
-
 from . import pytorch_utils
 from .models import Cnn14_DecisionLevelMax
 
@@ -27,11 +25,7 @@ def load_model(model_file_path, device=None):
     checkpoint = torch.load(model_file_path, map_location=device)
     model.load_state_dict(checkpoint['model'])
 
-    # Add resampler to be compatible with input waveforms
-    resampler = Resample(48000, 32000).to(device)
-    model = nn.Sequential(resampler, model)
-
-    model.sample_rate = 48000  # Input sample rate
+    model.sample_rate = 32000  # Input sample rate
     model.scene_embedding_size = 2048
     model.timestamp_embedding_size = 2048
 
