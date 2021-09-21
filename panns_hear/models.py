@@ -131,7 +131,9 @@ class Cnn14(nn.Module):
 
         x = self.spectrogram_extractor(input)   # (batch_size, 1, time_steps, freq_bins)
         x = self.logmel_extractor(x)    # (batch_size, 1, time_steps, mel_bins)
-        
+
+        frames_num = x.shape[2]
+
         x = x.transpose(1, 3)
         x = self.bn0(x)
         x = x.transpose(1, 3)
@@ -142,7 +144,7 @@ class Cnn14(nn.Module):
         # Mixup on spectrogram
         if self.training and mixup_lambda is not None:
             x = do_mixup(x, mixup_lambda)
-        
+
         x = self.conv_block1(x, pool_size=(2, 2), pool_type='avg')
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv_block2(x, pool_size=(2, 2), pool_type='avg')
@@ -157,6 +159,9 @@ class Cnn14(nn.Module):
         x = F.dropout(x, p=0.2, training=self.training)
         x = torch.mean(x, dim=3)
         
+        # New added for HEAR2021
+        sed_embedding = self.get_sed_embedding(x, frames_num)
+        
         (x1, _) = torch.max(x, dim=2)
         x2 = torch.mean(x, dim=2)
         x = x1 + x2
@@ -165,9 +170,25 @@ class Cnn14(nn.Module):
         embedding = F.dropout(x, p=0.5, training=self.training)
         clipwise_output = torch.sigmoid(self.fc_audioset(x))
         
-        output_dict = {'clipwise_output': clipwise_output, 'embedding': embedding}
+        output_dict = {'clipwise_output': clipwise_output, 'embedding': embedding, 'sed_embedding': sed_embedding}
 
         return output_dict
+
+    def get_sed_embedding(self, x, frames_num):
+        """
+
+        Args:
+            x: (batch_size, channels_num, time_steps)
+
+        Outputs:
+            sed_embedding: (batch_size, upsampled_time_steps, embedding_size)
+        """
+        interpolate_ratio = 32
+        sed_embedding = x.transpose(1, 2)
+        sed_embedding = interpolate(sed_embedding, interpolate_ratio)
+        sed_embedding = pad_framewise_output(sed_embedding, frames_num)
+
+        return sed_embedding
 
 
 class Cnn14_DecisionLevelMax(nn.Module):
@@ -265,8 +286,7 @@ class Cnn14_DecisionLevelMax(nn.Module):
         framewise_output = interpolate(segmentwise_output, self.interpolate_ratio)
         framewise_output = pad_framewise_output(framewise_output, frames_num)
 
-        output_dict = {'embedding': x,
-            'framewise_output': framewise_output, 
+        output_dict = {'framewise_output': framewise_output, 
             'clipwise_output': clipwise_output}
 
         return output_dict
