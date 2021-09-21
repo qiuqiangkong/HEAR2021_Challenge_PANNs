@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 from .models import Cnn14
@@ -35,7 +34,7 @@ def get_scene_embeddings(x, model):
 
     with torch.no_grad():
         model.eval()
-        embeddings = model(x)['embedding'].data.cpu().numpy()
+        embeddings = model(x)['embedding']
         
     return embeddings
 
@@ -44,10 +43,11 @@ def get_timestamp_embeddings(x, model):
 
     with torch.no_grad():
         model.eval()
-        sed_embeddings = model(x)['sed_embedding'].data.cpu().numpy()
+        sed_embeddings = model(x)['sed_embedding']
         
     batch_size, frames_num, embedding_size = sed_embeddings.shape
-    time_steps = np.arange(frames_num) * 0.01   # (frames_num,)
-    time_steps = np.tile(time_steps, (batch_size, 1))   # (batch_size, frames_num)
+    
+    time_steps = torch.arange(frames_num)[None, :] * 0.01   # (frames_num,)
+    time_steps = time_steps.repeat(batch_size, 1)   # (batch_size, frames_num)
 
     return sed_embeddings, time_steps
