@@ -1,8 +1,6 @@
 import torch
-import torch.nn as nn
 
-from . import pytorch_utils
-from .models import Cnn14_DecisionLevelMax
+from .models import Cnn14
 
 
 def load_model(model_file_path, device=None):
@@ -10,7 +8,7 @@ def load_model(model_file_path, device=None):
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # Instantiate model
-    model = Cnn14_DecisionLevelMax(
+    model = Cnn14(
         sample_rate=32000,
         window_size=1024,
         hop_size=320,
@@ -33,12 +31,12 @@ def load_model(model_file_path, device=None):
 
 
 def get_scene_embeddings(x, model):
-    return model(x)['embedding'].mean(dim=1)
+    return model(x)['embedding']
 
 
 def get_timestamp_embeddings(x, model):
     embedding = model(x)['embedding']
-    embedding = pytorch_utils.interpolate(embedding, ratio=8)
+    embedding = embedding.unsqueeze(1).repeat(1, 248, 1)
     duration = x.shape[1] / model.sample_rate
     frame_duration = duration / embedding.shape[1]
     timestamps = torch.arange(frame_duration / 2, duration, frame_duration)
