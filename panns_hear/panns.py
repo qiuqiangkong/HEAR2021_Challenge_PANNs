@@ -32,6 +32,13 @@ def load_model(model_file_path, device=None):
 
 def get_scene_embeddings(x, model):
 
+    audio_length = x.shape[1]
+    minimum_length = 32000
+
+    if audio_length < minimum_length:
+        batch_size = x.shape[0]
+        x = torch.cat((x, torch.zeros(batch_size, minimum_length - audio_length)), dim=1)
+
     with torch.no_grad():
         model.eval()
         embeddings = model(x)['embedding']
@@ -40,6 +47,13 @@ def get_scene_embeddings(x, model):
 
 
 def get_timestamp_embeddings(x, model):
+
+    audio_length = x.shape[1]
+    minimum_length = 32000
+
+    if audio_length < minimum_length:
+        batch_size = x.shape[0]
+        x = torch.cat((x, torch.zeros(batch_size, minimum_length - audio_length)), dim=1)
 
     with torch.no_grad():
         model.eval()
