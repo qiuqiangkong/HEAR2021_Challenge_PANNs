@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='panns_hear',
-    version='0.1.4',
+    version='0.2.1',
     description='PANNs embeddings for HEAR 2021 Challenge.',
     long_description=long_description,
     long_description_content_type="text/markdown",
